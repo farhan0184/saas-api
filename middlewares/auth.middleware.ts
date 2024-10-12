@@ -6,6 +6,7 @@ const secret = process.env.SECRET
 export const decodeToken = (req: Request, res: Response, next: NextFunction) => {
     try {
         const token = req.headers?.authorization?.split(" ")[1];
+
         // console.log(token)
 
         res.locals.user = jwt.verify(token as string, secret as string);
@@ -16,10 +17,21 @@ export const decodeToken = (req: Request, res: Response, next: NextFunction) => 
     }
 };
 
-
+export const isLoggedIn = (req: Request, res: Response, next: NextFunction) => {
+    const token = req.headers?.authorization?.split(" ")[1];
+    if (!!token) {
+        next()
+    } else {
+        res.status(401).send({
+            error: true,
+            msg: 'Unauthorized'
+        })
+    }
+}
 
 export const isUser = (req: Request, res: Response, next: NextFunction) => {
     let { user } = res.locals
+    console.log(user)
     if (!!user && !!user?._id) {
         next()
     } else {
@@ -30,10 +42,11 @@ export const isUser = (req: Request, res: Response, next: NextFunction) => {
     }
 }
 
+
 export const isAdmin = (req: Request, res: Response, next: NextFunction) => {
     let {user} = res.locals
     
-    console.log(user)
+    // console.log(user)
     if (!!user && !!user?._id && user.isAdmin === true) {
         next()
     } else {

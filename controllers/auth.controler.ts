@@ -29,16 +29,16 @@ const generateVerificationCode = (): string => {
 
 
 // Helper function to set verification code and timer
-const setVerificationCode = (email: string, code: string) => {
+const setVerificationCode = (email: string, code: string, time: number) => {
     // Clear existing timer if there is one
     if (verificationCodes[email] && verificationCodes[email].timer) {
         clearTimeout(verificationCodes[email].timer);
     }
 
-    const expiresAt = Date.now() + VERIFICATION_CODE_EXPIRATION;
+    const expiresAt = Date.now() + time;
     const timer = setTimeout(() => {
         delete verificationCodes[email];
-    }, VERIFICATION_CODE_EXPIRATION);
+    }, time);
 
     verificationCodes[email] = { code, expiresAt, timer };
 };
@@ -59,7 +59,16 @@ export const userRegister = async (req: Request, res: Response): Promise<Respons
             });
         }
 
+        // const hashPassword = await bcrypt.hash(body.password, 10);
+        // // Create a new user instance
+        // const user = new User({
+        //     name: body.name,
+        //     email: body.email,
+        //     password: hashPassword,
+        // });
 
+        // // Save the user to the database
+        // await user.save();
 
         // Create a new user
         const newUser = {
@@ -75,29 +84,17 @@ export const userRegister = async (req: Request, res: Response): Promise<Respons
         await sendTestEmail(body.email, mailtext);
 
         // Set verification code and timer
-        setVerificationCode(body.email, verificationCode);
-
-
-        // const hashPassword = await bcrypt.hash(body.password, 10);
-        // // Create a new user instance
-        // const user = new User({
-        //     name:  body.name,
-        //     email: body.email,
-        //     password: hashPassword,
-        // });
-
-        // // Save the user to the database
-        // await user.save();
-
+        setVerificationCode(body.email, verificationCode, VERIFICATION_CODE_EXPIRATION);
 
         // Return success response
         return res.status(200).json({
             data: newUser,
-            message: "Verification code sent. Please verify within 2 minutes."
+            code: verificationCode,
+            msg: "Verification code sent. Please verify within 2 minutes."
         });
 
     } catch (error) {
-        console.error(error);
+        // console.error(error);
         return res.status(500).json({
             error: true,
             msg: "Something went wrong."
@@ -111,8 +108,8 @@ export const verifyCode = async (req: Request, res: Response): Promise<Response>
         const { newUser, code } = req.body;
         // console.log(newUser, code);
 
-        const storedVerification = verificationCodes[newUser.email];
-
+        const storedVerification =  verificationCodes[newUser.email];
+        // console.log("token 103",storedVerification);
         if (!storedVerification) {
             return res.status(400).json({
                 error: true,
@@ -153,11 +150,20 @@ export const verifyCode = async (req: Request, res: Response): Promise<Response>
         // Save the user to the database
         await user.save();
 
+        const token = jwt.sign(
+            { _id: user._id, isAdmin: user.isAdmin, role: user.role },
+            SECRET as string,
+            { expiresIn: '1d' }
+        );
+
+        const { password, ...userWithoutPassword } = user.toObject();
 
 
         return res.status(201).json({
             success: true,
+            user: userWithoutPassword,
             msg: "Email verified and user registered successfully.",
+            token
         });
 
     } catch (error) {
@@ -183,11 +189,12 @@ export const resendVerificationCode = async (req: Request, res: Response): Promi
 
 
         // Set new verification code and restart timer
-        setVerificationCode(email, newVerificationCode);
+        setVerificationCode(email, newVerificationCode, 1 * 60 * 1000);
 
         return res.status(200).json({
             success: true,
-            message: "New verification code sent. Please verify within 2 minutes."
+            code:newVerificationCode,
+            msg: "Re-sent the verification code. Please verify within 1 minutes."
         });
 
     } catch (error) {
@@ -205,8 +212,12 @@ export const useLogin = async (req: Request, res: Response): Promise<Response> =
     try {
         const { email, password } = req.body;
 
+        // console.log(email, password);
+
         // Find user by email
         const user = await User.findOne({ email }).select('+password');
+
+        // console.log(user);
 
         if (!user) {
             return res.status(401).json({
@@ -227,7 +238,7 @@ export const useLogin = async (req: Request, res: Response): Promise<Response> =
 
         // Generate JWT token
         const token = jwt.sign(
-            { _id: user?._id, isAdmin: user?.isAdmin, role: user?.role },
+            { _id: user._id, isAdmin: user.isAdmin, role: user.role },
             SECRET as string,
             { expiresIn: '1d' }
         );
@@ -282,12 +293,12 @@ export const useResetPassword = async (req: Request, res: Response): Promise<Res
     try {
         const { password, otp_token } = req.body;
         if (!otp_token) {
-            return res.status(403).json({ message: 'Token is required' });
+            return res.status(403).json({ msg: 'Token is required' });
         }
 
         const decodedToken = await verifyToken(otp_token, SECRET as string);
 
-        console.log('Decoded token:', decodedToken);
+        // console.log('Decoded token:', decodedToken);
         const email = decodedToken.email;
 
 
@@ -320,4 +331,34 @@ export const useResetPassword = async (req: Request, res: Response): Promise<Res
         });
     }
 }
+
+
+export const getUser = async (req: Request, res: Response): Promise<Response> => {
+    try {
+        const { user } = res.locals;
+        // console.log('User from res.locals:', user); // Add logging to check the user object
+
+        if (!user || !user._id) {
+            return res.status(400).json({ error: true, msg: "User ID not found in token." });
+        }
+
+        const data = await User.findById(user._id).select('-password');
+        if (!data) {
+            return res.status(404).json({ error: true, msg: "User not found." });
+        }
+
+        return res.status(200).send({
+            success: true,
+            msg: "User data fetched successfully.",
+            data
+        });
+    } catch (error) {
+        // console.error('Error in getUser:', error);
+        return res.status(500).json({
+            error: true,
+            msg: "An error occurred while getting the user."
+        });
+    }
+}
+
 

@@ -1,14 +1,15 @@
 import express, { NextFunction, Request, RequestHandler, Response } from "express";
-import dotenv from "dotenv";
+
 import mongoose from "mongoose";
-import cors from "cors";
+
 import apiRoutes from "./routes/api";
 import { decodeToken } from "./middlewares/auth.middleware";
 import helmet from "helmet";
-import compression from "compression";
-import { ExpressAuth } from "@auth/express";
-import Facebook from "@auth/express/providers/facebook"
 
+
+import dotenv from "dotenv";
+import compression from "compression";
+import cors from "cors";
 
 dotenv.config();
 
@@ -21,23 +22,19 @@ mongoose.connect(process.env.DATABASE_URL!).then(() => {
 
 // console.log(process.env.SECRET)
 
-const PORT: number = Number(process.env.PORT);
+
+
+const PORT = process.env.PORT || 8080;
 
 const app = express();
 
 app.use(express.json())
 
 // Use Helmet to secure your app by setting various HTTP headers
-app.use(helmet());
+// app.use(helmet());
 
 // Use compression middleware to compress all responses
 app.use(compression());
-
-
-
-
-
-
 
 app.use(
     express.urlencoded({
@@ -46,19 +43,9 @@ app.use(
 );
 
 
-app.use("/auth/*", ExpressAuth({
-    providers: [
-      Facebook({
-        clientId: process.env.FACEBOOK_CLIENT_ID as string,
-        clientSecret: process.env.FACEBOOK_CLIENT_SECRET as string,
-        authorization: {
-          params: {
-            scope: "email,pages_show_list,pages_read_engagement,pages_manage_posts"
-          }
-        }
-      })
-    ]
-  }));
+
+
+
 
 app.use(function (req: Request, res: Response, next: NextFunction) {
     res.header("Access-Control-Allow-Origin", "*"); //* will allow from all cross domain

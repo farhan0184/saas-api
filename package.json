@@ -4,19 +4,21 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon index.ts"
+    "dev": "nodemon --exec tsx index.ts",
+    "start": "node dist/index.js",
+    "build": "tsc"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@auth/express": "^0.6.1",
     "@types/express": "^4.17.21",
     "@types/node": "^22.7.0",
     "bcrypt": "^5.1.1",
     "compression": "^1.7.4",
+    "cookie-parser": "^1.4.7",
+    "cookie-session": "^2.1.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.0",
@@ -25,15 +27,24 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.6.3",
     "nodemailer": "^6.9.15",
-    "nodemon": "^3.1.7"
+    "nodemon": "^3.1.7",
+    "passport": "^0.7.0",
+    "passport-facebook": "^3.0.0",
+    "passport-twitter": "^1.0.4"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
     "@types/compression": "^1.7.5",
+    "@types/cookie-parser": "^1.4.7",
+    "@types/cookie-session": "^2.0.49",
     "@types/cors": "^2.8.17",
     "@types/jsonwebtoken": "^9.0.7",
     "@types/nodemailer": "^6.4.16",
+    "@types/passport": "^1.0.16",
+    "@types/passport-facebook": "^3.0.3",
+    "@types/passport-twitter": "^1.0.40",
     "ts-node": "^10.9.2",
+    "tsx": "^4.19.1",
     "typescript": "^5.6.2"
   }
 }

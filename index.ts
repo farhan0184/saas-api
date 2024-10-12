@@ -10,6 +10,8 @@ import helmet from "helmet";
 import dotenv from "dotenv";
 import compression from "compression";
 import cors from "cors";
+import cookieParser from "cookie-parser";
+import passport from "passport";
 
 dotenv.config();
 
@@ -29,6 +31,8 @@ const PORT = process.env.PORT || 8080;
 const app = express();
 
 app.use(express.json())
+app.use(cookieParser(process.env.COOKIE_SECRET));
+app.use(passport.initialize());
 
 // Use Helmet to secure your app by setting various HTTP headers
 // app.use(helmet());
